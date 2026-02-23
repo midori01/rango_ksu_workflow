@@ -17,7 +17,7 @@ on:
           - android13
           - android14
           - android15
-        default: android12
+        default: android15
       kernel_version:
         description: "内核版本"
         required: true
