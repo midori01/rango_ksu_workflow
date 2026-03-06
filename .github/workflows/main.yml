@@ -357,7 +357,7 @@ jobs:
             "Next") REPO_URL="https://github.com/KernelSU-Next/KernelSU-Next.git"; REPO_URL2="KernelSU-Next/KernelSU-Next" ;;
             "MKSU") REPO_URL="https://github.com/5ec1cff/KernelSU.git"; REPO_URL2="5ec1cff/KernelSU" ;;
             "SukiSU") REPO_URL="https://github.com/SukiSU-Ultra/SukiSU-Ultra.git"; REPO_URL2="SukiSU-Ultra/SukiSU-Ultra" ;;
-            "ReSukiSU") REPO_URL="https://github.com/ReSukiSU/ReSukiSU.git"; REPO_URL2="ReSukiSU/ReSukiSU" ;;
+            "ReSukiSU") REPO_URL="https://github.com/midori01/ReSukiSU.git"; REPO_URL2="midori01/ReSukiSU" ;;
             "MidoriSU") REPO_URL="https://github.com/midori01/KernelSU.git"; REPO_URL2="midori01/KernelSU" ;;
           esac
 
