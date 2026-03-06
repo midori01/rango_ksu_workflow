@@ -825,6 +825,11 @@ jobs:
           # 小米：补充符号（幂等）
           ensure_line_once "$XIAOMI_SYMBOL_LIST" "device_find_any_child"
 
+      # ==================== 备份原始 defconfig ====================
+      # 用于后续生成 defconfig fragment（bazel trim 兼容）
+      - name: 备份原始 defconfig
+        run: cp "$DEFCONFIG" "$DEFCONFIG.orig"
+
       # ==================== 配置 ZRAM 选项 ====================
       # 启用各种 ZRAM 压缩算法
       - name: 配置 ZRAM 选项
@@ -938,10 +943,21 @@ jobs:
             cd ./common
             BID="ab$((RANDOM % 90000000 + 10000000))"
             GHASH=$(git rev-parse --verify HEAD | cut -c1-13)
-            kmi_61="-android14-11-g${GHASH}-${BID}"
-            sed -i "\$s|echo \"\$res\"|echo \"$kmi_61\"|" ./scripts/setlocalversion 2>/dev/null || true
-            kmi_66="-g${GHASH}-${BID}-4k"
-            sed -i "/^CONFIG_LOCALVERSION=/ s/=\"[^\"]*\"/=\"${kmi_66}\"/" ./arch/arm64/configs/gki_defconfig 2>/dev/null || true
+            # 统一内核名称格式：-androidXX-KMI-gHASH-BID-4k
+            case "${{ inputs.android_version }}-${{ inputs.kernel_version }}" in
+              "android14-6.1")  KMI_TAG="android14-11" ;;
+              "android15-6.6")  KMI_TAG="android15-8" ;;
+              "android16-6.12") KMI_TAG="android16-5" ;;
+              *) KMI_TAG="${{ inputs.android_version }}" ;;
+            esac
+            KMI_LOCAL="-${KMI_TAG}-g${GHASH}-${BID}-4k"
+
+            # 6.1 通过 setlocalversion 注入版本名称
+            if [ "${{ inputs.kernel_version }}" = "6.1" ]; then
+              sed -i "\$s|echo \"\$res\"|echo \"${KMI_LOCAL}\"|" ./scripts/setlocalversion 2>/dev/null || true
+            fi
+            # 6.6+ 通过 CONFIG_LOCALVERSION 注入版本名称
+            sed -i "/^CONFIG_LOCALVERSION=/ s/=\"[^\"]*\"/=\"${KMI_LOCAL}\"/" ./arch/arm64/configs/gki_defconfig 2>/dev/null || true
           fi
 
       # ==================== 自定义构建时间 ====================
@@ -1004,7 +1020,19 @@ jobs:
               LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh CC="/usr/bin/ccache clang" || exit 1
             else
               # 6.1+ 内核使用 Bazel 构建
-              tools/bazel build --disk_cache=/home/runner/.cache/bazel --config=fast --lto=thin //common:kernel_aarch64_dist || exit 1
+              # 提取 gki_defconfig 修改到 fragment，避免 bazel trim 检查失败
+              FRAG="common/arch/arm64/configs/ksu.fragment"
+              diff "$DEFCONFIG.orig" "$DEFCONFIG" | grep '^>' | sed 's/^> //; s/^[[:space:]]*//' > "$FRAG" || true
+              cp "$DEFCONFIG.orig" "$DEFCONFIG"
+              echo "=== KSU Fragment 内容 ==="
+              cat "$FRAG"
+              echo "========================="
+              # 仅当 fragment 非空时传递参数
+              FRAG_FLAG=""
+              if [ -s "$FRAG" ]; then
+                FRAG_FLAG="--defconfig_fragment=//common:arch/arm64/configs/ksu.fragment"
+              fi
+              tools/bazel build --disk_cache=/home/runner/.cache/bazel --config=fast --lto=thin $FRAG_FLAG //common:kernel_aarch64_dist || exit 1
               strings ./bazel-bin/common/kernel_aarch64/Image | grep 'Linux version'
             fi
 
