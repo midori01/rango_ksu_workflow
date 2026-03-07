@@ -100,7 +100,7 @@ jobs:
           elif [ "${{ inputs.kernelsu_variant }}" == "ReSukiSU" ]; then
             KSU_VERSION=$((30700 + KSU_GIT_VERSION))
           elif [ "${{ inputs.kernelsu_variant }}" == "Official" ] || [ "${{ inputs.kernelsu_variant }}" == "MKSU" ] || [ "${{ inputs.kernelsu_variant }}" == "MidoriSU" ]; then
-            KSU_VERSION=$((20000 + KSU_GIT_VERSION))
+            KSU_VERSION=$((30000 + KSU_GIT_VERSION))
           elif [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
             KSU_VERSION=$((30000 + KSU_GIT_VERSION))
           fi
