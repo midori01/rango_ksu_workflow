@@ -353,9 +353,9 @@ jobs:
       - name: 获取 KernelSU 提交信息
         run: |
           case "${{ inputs.kernelsu_variant }}" in
-            "Official") REPO_URL="https://github.com/tiann/KernelSU.git"; REPO_URL2="tiann/KernelSU" ;;
+            "Official") REPO_URL="https://github.com/azkx/KernelSU.git"; REPO_URL2="azkx/KernelSU" ;;
             "Next") REPO_URL="https://github.com/KernelSU-Next/KernelSU-Next.git"; REPO_URL2="KernelSU-Next/KernelSU-Next" ;;
-            "MKSU") REPO_URL="https://github.com/azkx/KernelSU.git"; REPO_URL2="azkx/KernelSU" ;;
+            "MKSU") REPO_URL="https://github.com/5ec1cff/KernelSU.git"; REPO_URL2="5ec1cff/KernelSU" ;;
             "SukiSU") REPO_URL="https://github.com/SukiSU-Ultra/SukiSU-Ultra.git"; REPO_URL2="SukiSU-Ultra/SukiSU-Ultra" ;;
             "ReSukiSU") REPO_URL="https://github.com/midori01/ReSukiSU.git"; REPO_URL2="midori01/ReSukiSU" ;;
             "MidoriSU") REPO_URL="https://github.com/midori01/KernelSU.git"; REPO_URL2="midori01/KernelSU" ;;
