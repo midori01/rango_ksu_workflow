@@ -79,7 +79,7 @@ on:
         description: "自定义构建时间 (可选，N或留空=当前UTC)"
         required: false
         type: string
-        default: "Sun Mar 08 07:11:22 JST 2026"
+        default: "N"
 
       # ==================== 功能开关 ====================
       use_zram:
