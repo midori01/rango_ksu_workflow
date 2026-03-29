@@ -450,6 +450,13 @@ jobs:
               if [ -f "kernel/Kbuild" ]; then
                 sed -i "s/DKSU_VERSION=16/DKSU_VERSION=${KSU_VERSION}/" kernel/Kbuild
               fi
+
+              # 修复 extras.c 中 arch.h 路径 (include/ 子目录布局)
+              if [ -f "kernel/extras.c" ]; then
+                sed -i 's|#include "arch.h"|#include "include/arch.h"|g' kernel/extras.c
+                echo "已修复 MidoriSU extras.c: arch.h -> include/arch.h"
+              fi
+
               cd ..
               ;;
             "SukiSU")
