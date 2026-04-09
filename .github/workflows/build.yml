@@ -320,8 +320,8 @@ jobs:
 
           NEEDS_FIX=false
           if [[ "${{ inputs.android_version }}" == "android13" && "${{ inputs.kernel_version }}" == "5.10" && $CURRENT_SUB -le 186 ]] ||
-             [[ "${{ inputs.android_version }}" == "android13" && "${{ inputs.kernel_version }}" == "5.15" && $CURRENT_SUB -le 119 ]] ||
-             [[ "${{ inputs.android_version }}" == "android14" && "${{ inputs.kernel_version }}" == "6.1" && $CURRENT_SUB -le 43 ]]; then
+          [[ "${{ inputs.android_version }}" == "android13" && "${{ inputs.kernel_version }}" == "5.15" && $CURRENT_SUB -le 119 ]] ||
+          [[ "${{ inputs.android_version }}" == "android14" && "${{ inputs.kernel_version }}" == "6.1" && $CURRENT_SUB -le 43 ]]; then
             NEEDS_FIX=true
           fi
 
@@ -362,13 +362,13 @@ jobs:
                 case "$variant_input" in
                   "Next") ;;
                   "SukiSU") BRANCH="-s builtin" ;;
-                  "Official"|"MKSU") BRANCH="-s main" ;;
+                  "Official"|"MKSU"|"MidoriSU") BRANCH="-s main" ;;
                   *) BRANCH="-" ;;
                 esac
                 ;;
               "Dev(开发)")
                 case "$variant_input" in
-                  "Official"|"MKSU") BRANCH="-s main" ;;
+                  "Official"|"MKSU"|"MidoriSU") BRANCH="-s main" ;;
                   "Next") ;;
                   "SukiSU") BRANCH="-s builtin" ;;
                   *) echo "未知变体: $variant_input" >&2; exit 1 ;;
@@ -408,11 +408,11 @@ jobs:
           case "${{ inputs.ksu_variant }}" in
             "Official")
               echo "添加 KernelSU 官方版..."
-              curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash $BRANCH
+              curl -LSs "https://raw.githubusercontent.com/azkx/KernelSU/main/kernel/setup.sh" | bash $BRANCH
 
               cd KernelSU
               KSU_GIT_VERSION=$(git rev-list --count HEAD)
-              KSU_VERSION=$((20000 + KSU_GIT_VERSION))
+              KSU_VERSION=$((30000 + KSU_GIT_VERSION))
               echo "KSU_VERSION=$KSU_VERSION" >> $GITHUB_ENV
 
               if [ -f "kernel/Kbuild" ]; then
@@ -430,12 +430,37 @@ jobs:
 
               cd KernelSU
               KSU_GIT_VERSION=$(git rev-list --count HEAD)
-              KSU_VERSION=$((20000 + KSU_GIT_VERSION))
+              KSU_VERSION=$((30000 + KSU_GIT_VERSION))
+              echo "KSU_VERSION=$KSU_VERSION" >> $GITHUB_ENV
+              echo "计算的 KSU 版本号: $KSU_VERSION"
+
+              # 更新 Kbuild 中的版本号
+              if [ -f "kernel/Kbuild" ]; then
+                sed -i "s/DKSU_VERSION=16/DKSU_VERSION=${KSU_VERSION}/" kernel/Kbuild
+                echo "已更新 kernel/Kbuild 中的版本号"
+              fi
+              cd ..
+              ;;
+            "MidoriSU")
+              echo "添加 MidoriSU..."
+              curl -LSs "https://raw.githubusercontent.com/midori01/KernelSU/main/kernel/setup.sh" | bash $BRANCH
+              
+              # 计算并设置 KSU 版本号
+              cd KernelSU
+              KSU_GIT_VERSION=$(git rev-list --count HEAD)
+              KSU_VERSION=$((30000 + KSU_GIT_VERSION))
               echo "KSU_VERSION=$KSU_VERSION" >> $GITHUB_ENV
 
               if [ -f "kernel/Kbuild" ]; then
                 sed -i "s/DKSU_VERSION=16/DKSU_VERSION=${KSU_VERSION}/" kernel/Kbuild
               fi
+
+              # 修复 extras.c 中 arch.h 路径 (include/ 子目录布局)
+              if [ -f "kernel/extras.c" ]; then
+                sed -i 's|#include "arch.h"|#include "include/arch.h"|g' kernel/extras.c
+                echo "已修复 MidoriSU extras.c: arch.h -> include/arch.h"
+              fi
+
               cd ..
               ;;
             "SukiSU")
@@ -444,7 +469,7 @@ jobs:
               ;;
             "ReSukiSU")
               echo "添加 ReSukiSU..."
-              curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash $BRANCH
+              curl -LSs "https://raw.githubusercontent.com/midori01/ReSukiSU/main/kernel/setup.sh" | bash $BRANCH
               ;;
           esac
 
@@ -573,6 +598,13 @@ jobs:
 
               cd ..
               ;;
+            "MidoriSU")
+              cd ./KernelSU
+              echo "下载并应用 MidoriSU 的专属 SUSFS 补丁..."
+              curl -LSs "https://raw.githubusercontent.com/yapixel/kernel_patches/refs/heads/dev/kowsu/10_enable_susfs_for_ksu.patch" -o 10_enable_susfs_for_ksu.patch
+              patch -p1 < 10_enable_susfs_for_ksu.patch || true
+              cd ..
+              ;;
             "Next"|"SukiSU"|"ReSukiSU")
               echo "Next/SukiSU/ReSukiSU 使用内置 SUSFS 支持"
               ;;
@@ -581,7 +613,7 @@ jobs:
           cd $KERNEL_ROOT/common
           patch -p1 < 50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch || true
 
-          if [ "${{ inputs.ksu_variant }}" == "Official" ] || [ "${{ inputs.ksu_variant }}" == "MKSU" ] || [ "${{ inputs.ksu_variant }}" == "Next" ] || [ "${{ inputs.ksu_variant }}" == "SukiSU" ] || [ "${{ inputs.ksu_variant }}" == "ReSukiSU" ]; then
+          if [ "${{ inputs.ksu_variant }}" == "Official" ] || [ "${{ inputs.ksu_variant }}" == "MKSU" ] || [ "${{ inputs.ksu_variant }}" == "MidoriSU" ] || [ "${{ inputs.ksu_variant }}" == "Next" ] || [ "${{ inputs.ksu_variant }}" == "SukiSU" ] || [ "${{ inputs.ksu_variant }}" == "ReSukiSU" ]; then
             CURRENT_SUB="${{ inputs.sub_level }}"
             if [[ ! "$CURRENT_SUB" =~ ^[0-9]+$ ]]; then
               CURRENT_SUB=99999
