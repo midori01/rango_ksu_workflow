@@ -601,7 +601,7 @@ jobs:
             "MidoriSU")
               cd ./KernelSU
               echo "下载并应用 MidoriSU 的专属 SUSFS 补丁..."
-              curl -LSs "https://raw.githubusercontent.com/yapixel/kernel_patches/refs/heads/dev/kowsu/10_enable_susfs_for_ksu.patch" -o 10_enable_susfs_for_ksu.patch
+              curl -LSs "https://github.com/midori01/nezha_ksu_workflow/raw/refs/heads/main/.github/patches/kowsu/10_enable_susfs_for_ksu.patch" -o 10_enable_susfs_for_ksu.patch
               patch -p1 < 10_enable_susfs_for_ksu.patch || true
               cd ..
               ;;
