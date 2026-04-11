@@ -32,7 +32,7 @@ on:
         description: "自定义版本名 (可选)"
         required: false
         type: string
-        default: "-android15-8-gki-midori-build-4k"
+        default: "-android15-8-gki-midori-build"
       build_time:
         description: "自定义构建时间 (可选，N或留空=当前UTC)"
         required: false
@@ -117,8 +117,6 @@ jobs:
         include:
           - sub_level: "127"
             os_patch_level: "2026-04"
-          - sub_level: "X"
-            os_patch_level: "lts"
     uses: ./.github/workflows/build.yml
     secrets: inherit
     with:
