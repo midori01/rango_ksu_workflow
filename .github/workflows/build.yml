@@ -1113,112 +1113,38 @@ jobs:
       - name: 创建 AnyKernel3 压缩包
         id: create_zip
         run: |
+          if [ "${{ inputs.android_version }}" == "android12" ] || [ "${{ inputs.android_version }}" == "android13" ]; then
+            SRC_IMAGE="$KERNEL_ROOT/out/${{ inputs.android_version }}-${{ inputs.kernel_version }}/dist/Image"
+          else
+            SRC_IMAGE="$KERNEL_ROOT/bazel-bin/common/kernel_aarch64/Image"
+          fi
+          
           RAW_NAME="${{ inputs.ksu_variant }}_kernel-${{ env.CONFIG }}.zip"
           FINAL_ZIP_NAME=$(echo "$RAW_NAME" | tr ' ' '_')
           
+          SAFE_TIME=$(echo "${{ env.KBUILD_BUILD_TIMESTAMP }}" | tr ' ' '_')
+          RELEASE_TAG="Build_${{ env.CONFIG }}_${SAFE_TIME}"
+          
           cd $ANYKERNEL3
-          mv ../Image ./Image
+          cp "$SRC_IMAGE" ./Image
           zip -r "../$FINAL_ZIP_NAME" ./*
           
           echo "FINAL_ZIP_NAME=$FINAL_ZIP_NAME" >> $GITHUB_ENV
           echo "FINAL_ZIP_PATH=$GITHUB_WORKSPACE/$FINAL_ZIP_NAME" >> $GITHUB_ENV
-
-      - name: 构建 Boot 镜像 (Android 12)
-        if: inputs.android_version == 'android12'
-        working-directory: bootimgs
-        run: |
-          GKI_URL=https://dl.google.com/android/gki/gki-certified-boot-android12-5.10-${{ inputs.os_patch_level }}_${{ inputs.revision }}.zip
-          FALLBACK_URL=https://dl.google.com/android/gki/gki-certified-boot-android12-5.10-2023-01_r1.zip
-
-          status=$(curl -sL -w "%{http_code}" "$GKI_URL" -o /dev/null)
-          if [ "$status" = "200" ]; then
-            curl -Lo gki-kernel.zip "$GKI_URL"
-          else
-            curl -Lo gki-kernel.zip "$FALLBACK_URL"
-          fi
-
-          unzip gki-kernel.zip && rm gki-kernel.zip
-          $UNPACK_BOOTIMG --boot_img="$(pwd)/boot-5.10.img"
-
-          gzip -n -k -f -9 ./Image > ./Image.gz
-
-          $MKBOOTIMG --header_version 4 --kernel Image --output boot.img --ramdisk out/ramdisk --os_version 12.0.0 --os_patch_level "${{ inputs.os_patch_level }}"
-          $AVBTOOL add_hash_footer --partition_name boot --partition_size $((64 * 1024 * 1024)) --image boot.img --algorithm SHA256_RSA2048 --key $BOOT_SIGN_KEY_PATH
-          cp ./boot.img ../${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-boot.img
-
-          $MKBOOTIMG --header_version 4 --kernel Image.gz --output boot-gz.img --ramdisk out/ramdisk --os_version 12.0.0 --os_patch_level "${{ inputs.os_patch_level }}"
-          $AVBTOOL add_hash_footer --partition_name boot --partition_size $((64 * 1024 * 1024)) --image boot-gz.img --algorithm SHA256_RSA2048 --key $BOOT_SIGN_KEY_PATH
-          cp ./boot-gz.img ../${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-boot-gz.img
-
-          $MKBOOTIMG --header_version 4 --kernel Image.lz4 --output boot-lz4.img --ramdisk out/ramdisk --os_version 12.0.0 --os_patch_level "${{ inputs.os_patch_level }}"
-          $AVBTOOL add_hash_footer --partition_name boot --partition_size $((64 * 1024 * 1024)) --image boot-lz4.img --algorithm SHA256_RSA2048 --key $BOOT_SIGN_KEY_PATH
-          cp ./boot-lz4.img ../${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-boot-lz4.img
-
-      - name: 构建 Boot 镜像 (Android 13+)
-        if: inputs.android_version == 'android13' || inputs.android_version == 'android14' || inputs.android_version == 'android15' || inputs.android_version == 'android16'
-        working-directory: bootimgs
-        run: |
-          gzip -n -k -f -9 ./Image > ./Image.gz
-
-          $MKBOOTIMG --header_version 4 --kernel Image --output boot.img
-          $AVBTOOL add_hash_footer --partition_name boot --partition_size $((64 * 1024 * 1024)) --image boot.img --algorithm SHA256_RSA2048 --key $BOOT_SIGN_KEY_PATH
-          cp ./boot.img ../${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-boot.img
-
-          $MKBOOTIMG --header_version 4 --kernel Image.gz --output boot-gz.img
-          $AVBTOOL add_hash_footer --partition_name boot --partition_size $((64 * 1024 * 1024)) --image boot-gz.img --algorithm SHA256_RSA2048 --key $BOOT_SIGN_KEY_PATH
-          cp ./boot-gz.img ../${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-boot-gz.img
-
-          $MKBOOTIMG --header_version 4 --kernel Image.lz4 --output boot-lz4.img
-          $AVBTOOL add_hash_footer --partition_name boot --partition_size $((64 * 1024 * 1024)) --image boot-lz4.img --algorithm SHA256_RSA2048 --key $BOOT_SIGN_KEY_PATH
-          cp ./boot-lz4.img ../${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-boot-lz4.img
-
-      - name: 收集补丁冲突文件
-        if: always()
-        run: |
-          REJECTS_DIR="$GITHUB_WORKSPACE/patch-rejects"
-          mkdir -p "$REJECTS_DIR"
-
-          mapfile -t REJS < <(find "$KERNEL_ROOT" -type f -name '*.rej')
-          REJ_COUNT=${#REJS[@]}
-          echo "发现 $REJ_COUNT 个 .rej 文件"
-          echo "REJ_COUNT=$REJ_COUNT" >> $GITHUB_ENV
-
-          if [ "$REJ_COUNT" -gt 0 ]; then
-            for REJ in "${REJS[@]}"; do
-              REL="${REJ#"$KERNEL_ROOT"/}"
-              DEST="$REJECTS_DIR/$REL"
-              mkdir -p "$(dirname "$DEST")"
-              cp "$REJ" "$DEST"
-
-              ORIG="${REJ%.rej}"
-              if [ -f "$ORIG" ]; then
-                cp "$ORIG" "${DEST%.rej}"
-              fi
-              echo "$REL" >> "$REJECTS_DIR/index.txt"
-            done
-          fi
+          echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
 
       - name: 上传构建产物 (Artifacts)
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.FINAL_ZIP_NAME }}
           path: ${{ env.FINAL_ZIP_PATH }}
           compression-level: 0
 
-      - name: 上传补丁冲突文件
-        if: always() && env.REJ_COUNT > 0
-        uses: actions/upload-artifact@v6
-        with:
-          name: ${{ inputs.ksu_variant }}_kernel-${{ env.CONFIG }}-Rejects
-          path: patch-rejects/
-          if-no-files-found: ignore
-          compression-level: 9
-
       - name: 发布 Release
         uses: softprops/action-gh-release@v2
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && success()
         with:
-          tag_name: "Build_${{ env.CONFIG }}_$(echo '${{ env.KBUILD_BUILD_TIMESTAMP }}' | tr ' ' '_')"
+          tag_name: ${{ env.RELEASE_TAG }}
           name: "${{ inputs.ksu_variant }} - ${{ env.CONFIG }}"
           body: |
             - **构建时间**: `${{ env.KBUILD_BUILD_TIMESTAMP }}`
@@ -1228,5 +1154,6 @@ jobs:
             - **KSU 提交**: `${{ env.KSU_LATEST_COMMIT_DATE }}`
             - **SUSFS**: `${{ inputs.enable_susfs }}`
           files: ${{ env.FINAL_ZIP_PATH }}
+          generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
