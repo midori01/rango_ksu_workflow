@@ -1111,11 +1111,17 @@ jobs:
           gzip -n -k -f -9 ./Image > ./Image.gz
 
       - name: 创建 AnyKernel3 压缩包
+        id: create_zip
         run: |
+          RAW_NAME="${{ inputs.ksu_variant }}_kernel-${{ env.CONFIG }}.zip"
+          FINAL_ZIP_NAME=$(echo "$RAW_NAME" | tr ' ' '_')
+          
           cd $ANYKERNEL3
-          ZIP_NAME="${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-AnyKernel3.zip"
           mv ../Image ./Image
-          zip -r "../$ZIP_NAME" ./*
+          zip -r "../$FINAL_ZIP_NAME" ./*
+          
+          echo "FINAL_ZIP_NAME=$FINAL_ZIP_NAME" >> $GITHUB_ENV
+          echo "FINAL_ZIP_PATH=$GITHUB_WORKSPACE/$FINAL_ZIP_NAME" >> $GITHUB_ENV
 
       - name: 构建 Boot 镜像 (Android 12)
         if: inputs.android_version == 'android12'
@@ -1192,14 +1198,12 @@ jobs:
             done
           fi
 
-      - name: 上传构建产物
+      - name: 上传构建产物 (Artifacts)
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ inputs.ksu_variant }}_kernel-${{ env.CONFIG }}
-          path: |
-            *AnyKernel3.zip
-            *.img
-          compression-level: 9
+          name: ${{ env.FINAL_ZIP_NAME }}
+          path: ${{ env.FINAL_ZIP_PATH }}
+          compression-level: 0
 
       - name: 上传补丁冲突文件
         if: always() && env.REJ_COUNT > 0
@@ -1209,3 +1213,20 @@ jobs:
           path: patch-rejects/
           if-no-files-found: ignore
           compression-level: 9
+
+      - name: 发布 Release
+        uses: softprops/action-gh-release@v2
+        if: github.event_name != 'pull_request'
+        with:
+          tag_name: "Build_${{ env.CONFIG }}_$(echo '${{ env.KBUILD_BUILD_TIMESTAMP }}' | tr ' ' '_')"
+          name: "${{ inputs.ksu_variant }} - ${{ env.CONFIG }}"
+          body: |
+            - **构建时间**: `${{ env.KBUILD_BUILD_TIMESTAMP }}`
+            - **KMI 版本**: `${{ inputs.android_version }}`
+            - **内核版本**: `${{ inputs.kernel_version }}.${{ env.ACTUAL_SUBLEVEL }}`
+            - **KSU 变体**: `${{ inputs.ksu_variant }}`
+            - **KSU 提交**: `${{ env.KSU_LATEST_COMMIT_DATE }}`
+            - **SUSFS**: `${{ inputs.enable_susfs }}`
+          files: ${{ env.FINAL_ZIP_PATH }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
