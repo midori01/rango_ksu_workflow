@@ -121,6 +121,7 @@ jobs:
         run: |
           REAL_BUILD_TIME=$(TZ='Asia/Tokyo' date +'%Y%m%d_%H%M')
           echo "REAL_BUILD_TIME=$REAL_BUILD_TIME" >> $GITHUB_ENV
+          echo "RELEASE_TAG=Build_$REAL_BUILD_TIME" >> $GITHUB_ENV
           
           CONFIG="${{ inputs.android_version }}-${{ inputs.kernel_version }}-${{ inputs.sub_level }}"
           KERNEL_ROOT="$GITHUB_WORKSPACE/$CONFIG"
@@ -1137,10 +1138,11 @@ jobs:
         if: github.event_name != 'pull_request' && success()
         with:
           tag_name: ${{ env.RELEASE_TAG }}
-          name: "${{ inputs.ksu_variant }} - ${{ env.CONFIG }} (${{ env.REAL_BUILD_TIME }})"
+          name: "Kernel Batch Build (${{ env.REAL_BUILD_TIME }})"
+          append_body: true
           body: |
-            - **构建时间**: `${{ env.REAL_BUILD_TIME }}`
-            - **伪装时间**: `${{ env.KBUILD_BUILD_TIMESTAMP }}`
+            ---
+            ### 构建详情: ${{ inputs.ksu_variant }} - ${{ env.CONFIG }}
             - **内核版本**: `${{ inputs.kernel_version }}.${{ env.ACTUAL_SUBLEVEL }}`
             - **KMI 版本**: `${{ inputs.android_version }}-${{ inputs.kernel_version }}`
             - **KSU 变体**: `${{ inputs.ksu_variant }}`
