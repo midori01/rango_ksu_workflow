@@ -469,7 +469,7 @@ jobs:
               ;;
             "MidoriXX")
               echo "添加 MidoriXX..."
-              curl -LSs "https://raw.githubusercontent.com/azkx/KernelSU/main/kernel/setup.sh" | bash $BRANCH
+              curl -LSs "https://raw.githubusercontent.com/MidoriKSU/KernelSU/main/kernel/setup.sh" | bash $BRANCH
               
               # 计算并设置 KSU 版本号
               cd KernelSU

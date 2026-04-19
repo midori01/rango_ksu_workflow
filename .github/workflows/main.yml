@@ -369,7 +369,7 @@ jobs:
             "SukiSU") REPO_URL="https://github.com/SukiSU-Ultra/SukiSU-Ultra.git"; REPO_URL2="SukiSU-Ultra/SukiSU-Ultra" ;;
             "ReSukiSU") REPO_URL="https://github.com/midori01/ReSukiSU.git"; REPO_URL2="midori01/ReSukiSU" ;;
             "MidoriSU") REPO_URL="https://github.com/midori01/KernelSU.git"; REPO_URL2="midori01/KernelSU" ;;
-            "MidoriXX") REPO_URL="https://github.com/azkx/KernelSU.git"; REPO_URL2="azkx/KernelSU" ;;
+            "MidoriXX") REPO_URL="https://github.com/MidoriKSU/KernelSU.git"; REPO_URL2="MidoriKSU/KernelSU" ;;
           esac
 
           if [[ "${{ inputs.kernelsu_branch }}" == "Stable(标准)" && "${{ inputs.kernelsu_variant }}" != "MKSU" ]]; then
