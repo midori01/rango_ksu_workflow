@@ -132,7 +132,7 @@ jobs:
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             echo "SukiSU..."
             REPO="SukiSU-Ultra/SukiSU-Ultra"
-            KSUM="Manager"
+            KSUM="manager"
           elif [ "${{ inputs.kernelsu_variant }}" == "ReSukiSU" ]; then
             echo "ReSukiSU..."
             REPO="midori01/ReSukiSU"
@@ -194,7 +194,7 @@ jobs:
             if [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
               result=$(echo "$ARTIFACTS" | jq -r ".artifacts[] | select(.name == \"$KSUM\") | .name")
             else
-              result=$(echo "$ARTIFACTS" | jq -r '.artifacts[] | select(.name | contains("'"$KSUM"'")) | .name')
+              result=$(echo "$ARTIFACTS" | jq -r --arg needle "$KSUM" '.artifacts[] | select((.name | ascii_downcase) | contains($needle)) | .name')
             fi
 
             if [ -z "$result" ]; then
@@ -206,7 +206,7 @@ jobs:
               if [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
                 DOWNLOAD_LIST=$(echo "$ARTIFACTS" | jq -r ".artifacts[] | select(.name == \"$KSUM\") | \"\(.name)\t\(.archive_download_url)\"")
               else
-                DOWNLOAD_LIST=$(echo "$ARTIFACTS" | jq -r '.artifacts[] | select(.name | contains("'"$KSUM"'")) | "\(.name)\t\(.archive_download_url)"')
+                DOWNLOAD_LIST=$(echo "$ARTIFACTS" | jq -r --arg needle "$KSUM" '.artifacts[] | select((.name | ascii_downcase) | contains($needle)) | "\(.name)\t\(.archive_download_url)"')
               fi
               break
             fi
