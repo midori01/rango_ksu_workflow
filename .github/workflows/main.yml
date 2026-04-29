@@ -40,8 +40,11 @@ on:
           - SukiSU
           - ReSukiSU
           - Official
-          #- Next
-        default: ReSukiSU
+          - Next
+          - MKSU
+          - MidoriSU
+          - MidoriXX
+        default: MidoriSU
       kernelsu_branch:
         description: "KSU 分支"
         type: choice
@@ -54,12 +57,12 @@ on:
       version:
         description: "自定义版本名 (可选)"
         type: string
-        default: ""
+        default: "-gki-midori-build"
         required: false
       build_time:
         description: "自定义构建时间 (可选，N或留空=当前UTC)"
         type: string
-        default: "Sun Dec 01 08:10:00 UTC 2024"
+        default: "N"
         required: false
       # ==================== 功能开关 ====================
       use_zram:
@@ -276,6 +279,8 @@ jobs:
             "Official")  KSU_NAME="KernelSU" ;;
             "SukiSU")    KSU_NAME="SukiSU" ;;
             "ReSukiSU")  KSU_NAME="ReSukiSU" ;;
+            "MidoriSU")     KSU_NAME="MidoriSU" ;;
+            "MidoriXX")     KSU_NAME="MidoriXX" ;;
           esac
           echo "KSU_NAME=$KSU_NAME" >> $GITHUB_ENV
 
@@ -346,8 +351,7 @@ jobs:
         if: inputs.kernelsu_branch == 'Dev(开发)' || inputs.kernelsu_variant == 'SukiSU' || inputs.kernelsu_variant == 'ReSukiSU'
         run: |
           case "${{ inputs.kernelsu_variant }}" in
-            "Official") BRANCH="main" ;;
-            "SukiSU"|"ReSukiSU") BRANCH="main" ;;
+            "Official"|"MKSU"|"MidoriSU"|"MidoriXX"|"SukiSU"|"ReSukiSU") BRANCH="main" ;;
             "Next") BRANCH="dev" ;;
             *) echo "错误: 未知变体" >&2; exit 1 ;;
           esac
@@ -361,7 +365,9 @@ jobs:
             "Official") REPO_URL="https://github.com/tiann/KernelSU.git"; REPO_URL2="tiann/KernelSU" ;;
             "Next") REPO_URL="https://github.com/KernelSU-Next/KernelSU-Next.git"; REPO_URL2="KernelSU-Next/KernelSU-Next" ;;
             "SukiSU") REPO_URL="https://github.com/SukiSU-Ultra/SukiSU-Ultra.git"; REPO_URL2="SukiSU-Ultra/SukiSU-Ultra" ;;
-            "ReSukiSU") REPO_URL="https://github.com/ReSukiSU/ReSukiSU.git"; REPO_URL2="ReSukiSU/ReSukiSU" ;;
+            "ReSukiSU") REPO_URL="https://github.com/midori01/ReSukiSU.git"; REPO_URL2="midori01/ReSukiSU" ;;
+            "MidoriSU") REPO_URL="https://github.com/midori01/KernelSU.git"; REPO_URL2="midori01/KernelSU" ;;
+            "MidoriXX") REPO_URL="https://github.com/MidoriKSU/KernelSU.git"; REPO_URL2="MidoriKSU/KernelSU" ;;
           esac
 
           if [[ "${{ inputs.kernelsu_branch }}" == "Stable(标准)" ]]; then
