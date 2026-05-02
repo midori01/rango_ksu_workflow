@@ -589,9 +589,7 @@ jobs:
               cd ./KernelSU
               echo "下载并应用 MidoriSU 的专属 SUSFS 补丁..."
               curl -LSs "https://github.com/midori01/nezha_ksu_workflow/raw/refs/heads/main/.github/patches/kowsu/10_enable_susfs_for_ksu.patch" -o 10_enable_susfs_for_ksu.patch
-              curl -LSs "https://github.com/midori01/nezha_ksu_workflow/raw/refs/heads/main/.github/patches/kowsu/90_fix_susfs_symbols.patch" -o 90_fix_susfs_symbols.patch
               patch -p1 < 10_enable_susfs_for_ksu.patch || true
-              patch -p1 < 90_fix_susfs_symbols.patch || true
               cd ..
               ;;
             "Next"|"SukiSU"|"ReSukiSU")
